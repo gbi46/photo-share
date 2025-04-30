@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.env*
+*.sqlite3
+.vscode/
+.idea/
+poetry.lock
+.DS_Store
+Thumbs.db
+*.log
+.coverage
+.pytest_cache
