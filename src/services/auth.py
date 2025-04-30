@@ -7,12 +7,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.conf.config import settings
 from src.database.db import get_db
 from src.database.models import User
+from src.repositories.auth import AuthRepository
 
+class AuthService:
+    def __init__(self, auth_repo: AuthRepository):
+        self.auth_repo = auth_repo
+        self.db = auth_repo.db
+
+    async def create(
+        self,
+        user_data: dict
+    ):
+        return await self.auth_repo.create_user(user_data)
+    
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
-) -> User:
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
+    ) -> User:
     try:
         token = token.strip().replace('"', "")
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -47,4 +58,4 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Unexpected error: {str(e)}",
-        )
+            )
