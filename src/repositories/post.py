@@ -1,8 +1,13 @@
 from datetime import datetime
+from fastapi import HTTPException
 from src.database.models import Post, PostTag, Tag, User
-from src.schemas.post import PostCreateModel, PostCreateResponse
+from src.schemas.post import PostCreateModel, PostCreateResponse, PostResponse
+from src.schemas.tag import TagsShortResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.sql.expression import Delete
+from uuid import UUID
 
 class PostRepository:
     def __init__(self, db: AsyncSession):
@@ -52,5 +57,47 @@ class PostRepository:
             await self.db.commit()
             await self.db.refresh(post)
         post_response = PostCreateResponse.model_validate(post)
+
+        return post_response
+    
+    async def delete_post(self, post_id: UUID) -> bool:
+        stmt = Delete(Post).where(Post.id == post_id)
+        result = await self.db.execute(stmt)
+        await self.db.commit()
+
+        return result.rowcount > 0
+    
+    async def get_post(self, post_id: UUID) -> Post:
+        stmt = (
+            select(Post)
+            .options(
+                joinedload(Post.user),
+                selectinload(Post.tags).selectinload(PostTag.tag),
+                selectinload(Post.ratings)
+            )
+            .where(Post.id == post_id)
+        )
+
+        result = await self.db.execute(stmt)
+
+        post = result.scalar_one_or_none()
+
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")
+        
+        post_response = PostResponse.model_validate(post)
+        
+        post_response.avg_rating = (
+            round(sum(r.rating for r in post.ratings) / len(post.ratings), 2)
+            if post.ratings else None
+        )
+        post_response.rating_count = len(post.ratings)
+
+        post_response.tags = []
+        post_response.tags = [
+            TagsShortResponse.model_validate(tag_rel.tag)
+            for tag_rel in post.tags
+            if tag_rel.tag is not None
+        ]
 
         return post_response

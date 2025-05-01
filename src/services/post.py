@@ -1,5 +1,7 @@
 from src.database.models import User
 from src.repositories.post import PostRepository
+from src.schemas.post import PostResponse
+from uuid import UUID
 
 class PostService:
     def __init__(self, post_repo: PostRepository):
@@ -12,3 +14,9 @@ class PostService:
         user: User
     ):
         return await self.post_repo.create(post_data=post_data, user=user)
+    
+    async def get_post_by_id(self, post_id: UUID) -> PostResponse:
+        return await self.post_repo.get_post(post_id)
+    
+    async def delete_post(self, post_id: UUID) -> bool:
+        return await self.post_repo.delete_post(post_id)

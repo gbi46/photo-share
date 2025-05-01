@@ -1,7 +1,46 @@
-from src.database.models import User
+from src.database.db import get_db 
+from src.database.models import Post, User
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from src.services.auth import get_current_user
+from src.services.utils import logger
 from fastapi import Depends, HTTPException, status
-from functools import wraps
+from uuid import UUID
+
+def user_has_access(access_type):
+    async def checker(
+        post_id: UUID,
+        db: AsyncSession = Depends(get_db),
+        user: User = Depends(get_current_user),
+    ) -> Post:
+        stmt = select(Post).where(Post.id == post_id)
+        result = await db.execute(stmt)
+        post = result.scalar_one_or_none()
+
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")
+
+        # 1. Is author?
+        if post.user_id == user.id:
+            return post
+
+        # 2. Has elevated role?
+        roles = {r.name for r in user.roles}
+        if roles.intersection({"admin", "moderator"}):
+            return post
+
+        # 3. Has permission?
+        user_permissions = {
+            p.name for r in user.roles for p in r.permissions
+        }
+        if "delete_all_posts" in user_permissions:
+            return post
+
+        # If no valid permission
+        if access_type == 'delete':
+            raise HTTPException(status_code=403, detail="You cannot delete this post")
+
+    return Depends(checker)
 
 def require_role(role_name: str):
     async def role_checker(current_user: User = Depends(get_current_user)):
@@ -14,11 +53,25 @@ def require_role(role_name: str):
     return Depends(role_checker)
 
 def require_permission(permission_name: str):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, user=Depends(get_current_user), **kwargs):
-            if not any(permission_name in [p["name"] for p in role.permissions] for role in user.roles):
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Missing permission.")
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
+    async def checker(user: User = Depends(get_current_user)):
+        logger.info(f"Checking permission for user: {user.id}")
+        logger.info(f"user.roles: {user.roles} (type={type(user.roles)})")
+
+        for role in user.roles:
+            logger.info(f"role: {role.name} (type={type(role)})")
+            logger.info(f"permissions: {role.permissions} (type={type(role.permissions)})")
+
+        user_permissions = {
+            perm.name
+            for role in user.roles
+            for perm in role.permissions
+        }
+
+        if permission_name not in user_permissions:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Missing permission: {permission_name}"
+            )
+        return user
+    return Depends(checker)
+

@@ -36,7 +36,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now())
 
-    roles = relationship('Role', secondary=user_roles, back_populates='users')
+    roles = relationship('Role', secondary=user_roles, back_populates='users', lazy="selectin")
     posts: Mapped[list["Post"]] = relationship("Post", back_populates="user")
     comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="user")
     ratings: Mapped[list["PostRating"]] = relationship("PostRating", back_populates="user")
@@ -47,7 +47,7 @@ class Role(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
 
-    permissions = relationship('Permission', secondary=role_permissions, back_populates='roles')
+    permissions = relationship('Permission', secondary=role_permissions, back_populates='roles', lazy="selectin")
     users = relationship('User', secondary=user_roles, back_populates='roles')
 
 class Permission(Base):
