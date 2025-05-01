@@ -2,8 +2,9 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from jose.exceptions import ExpiredSignatureError
-from sqlalchemy import select
+from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from src.conf.config import settings
 from src.database.db import get_db
 from src.database.models import User
@@ -35,8 +36,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token: Missing user ID",
             )
-
-        result = await db.execute(select(User).where(User.id == user_id))
+        
+        stmt = select(User).options(selectinload(User.roles)).where(User.id == user_id)
+        result = await db.execute(stmt)
         user = result.scalar_one_or_none()
 
         if user is None:

@@ -7,6 +7,17 @@ from src.schemas.user import UserCreate
 class AuthRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def create_user_roles(self, user: User, role: str):
+        user_model = UserModel(self.db)
+        default_role = await user_model.add_role('user')
+
+        user.roles.append(default_role)
+
+        inp_role = await user_model.add_role(role)
+        user.roles.append(inp_role)
+
+        return user.roles
         
     async def create_user(self, user_data: UserCreate, user_role: str):
         password = security.get_password_hash(user_data.password)
@@ -16,11 +27,8 @@ class AuthRepository:
             password=password,
             status=UserStatusEnum.active
         )
-
-        user_model = UserModel(self.db)
-        role = await user_model.add_role(user_role)
         
-        new_user.roles.append(role)
+        new_user.roles = await self.create_user_roles(new_user, user_role)
 
         self.db.add(new_user)
         await self.db.commit()
