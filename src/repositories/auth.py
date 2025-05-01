@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.security import security
 from src.database.models import User, UserStatusEnum
 from src.models.user import UserModel
+from src.repositories.role import RoleRepository
 from src.schemas.user import UserCreate
 
 class AuthRepository:
@@ -10,9 +11,19 @@ class AuthRepository:
 
     async def create_user_roles(self, user: User, role: str):
         user_model = UserModel(self.db)
-        default_role = await user_model.add_role('user')
 
-        user.roles.append(default_role)
+        if not role == 'user':
+            default_role = await user_model.add_role('user')
+            default_role_name = default_role.name
+
+            user.roles.append(default_role)
+
+            role_repo = RoleRepository(self.db)
+            await role_repo.create_role(default_role_name)
+            await role_repo.create_role_permissions(default_role_name)
+
+        await role_repo.create_role(role)
+        await role_repo.create_role_permissions(role)
 
         inp_role = await user_model.add_role(role)
         user.roles.append(inp_role)
