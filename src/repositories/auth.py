@@ -8,7 +8,7 @@ class AuthRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
         
-    async def create_user(self, user_data: UserCreate):
+    async def create_user(self, user_data: UserCreate, user_role: str):
         password = security.get_password_hash(user_data.password)
         new_user = User(
             username=user_data.username,
@@ -18,7 +18,7 @@ class AuthRepository:
         )
 
         user_model = UserModel(self.db)
-        role = await user_model.add_role(user_data.role)
+        role = await user_model.add_role(user_role)
         
         new_user.roles.append(role)
 
