@@ -1,3 +1,4 @@
+from src.core.security import security
 from src.database.db import get_db
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import select
@@ -5,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.models import User
 from src.models.user import UserModel
 from src.repositories.auth import AuthRepository
-from src.schemas.user import UserCreate
+from src.schemas.auth import TokenModel
+from src.schemas.user import UserCreate, UserLogin
 from src.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -25,9 +27,16 @@ async def signup(user: UserCreate = Body(...), db: AsyncSession = Depends(get_db
     else:
         user_role = 'user'
 
-    user_data = user
-    user_data.role = user_role
-
     service = AuthService(AuthRepository(db))
 
-    return await service.create(user_data)
+    return await service.create(user, user_role)
+
+@router.post("/login", response_model=TokenModel)
+async def login(user_data: UserLogin, db: AsyncSession = Depends(get_db)):
+    user_model = UserModel(db)
+    db_user = await user_model.get_user_by_username(user_data.username)
+    if not db_user or not security.verify_password(user_data.password, db_user.password):
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+
+    tokens = security.generate_tokens(db_user.id)
+    return tokens

@@ -16,9 +16,10 @@ class AuthService:
 
     async def create(
         self,
-        user_data: dict
+        user_data: dict,
+        user_role: str
     ):
-        return await self.auth_repo.create_user(user_data)
+        return await self.auth_repo.create_user(user_data, user_role)
     
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
     ALGORITHM: str
+    REFRESH_SECRET_KEY: str
     SECRET_KEY: str
 
     CLD_NAME: str
