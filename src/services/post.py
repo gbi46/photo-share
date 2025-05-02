@@ -20,3 +20,10 @@ class PostService:
     
     async def delete_post(self, post_id: UUID) -> bool:
         return await self.post_repo.delete_post(post_id)
+    
+    async def update_post(
+        self,
+        post_id: UUID,
+        description: str = None
+    ) -> PostResponse:
+        return await self.post_repo.update_post(post_id, description)

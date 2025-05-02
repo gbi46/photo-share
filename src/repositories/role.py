@@ -10,16 +10,21 @@ class RoleRepository:
         self.db = db
 
     async def get_default_permissions(self):
+        user_permissions = []
+
+        moderator_permissions = user_permissions + [
+            'update_all_posts',
+            'delete_all_comments'
+        ]
+
+        admin_permissions = moderator_permissions + [
+            'delete_all_posts'
+        ]
+
         return {
-            'admin': [
-                'delete_all_posts',
-            ],
-            'moderator': [
-                'edit_all_posts',
-                'delete_all_comments'
-            ],
-            'user': [
-            ]
+            'user': user_permissions,
+            'moderator': moderator_permissions,
+            'admin': admin_permissions
         }
     
     async def get_role_by_name(self, role_name: str):

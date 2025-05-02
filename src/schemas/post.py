@@ -40,3 +40,6 @@ class PostResponse(BaseModel):
     tags: List[TagsShortResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+class PostUpdateRequest(BaseModel):
+    description: Optional[str] = None

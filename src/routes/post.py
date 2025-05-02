@@ -4,7 +4,7 @@ from src.database.db import get_db
 from src.database.models import Post, User
 from src.repositories.post import PostRepository
 from src.services.post import PostService
-from src.schemas.post import PostCreateModel, PostCreateResponse
+from src.schemas.post import PostCreateModel, PostCreateResponse, PostResponse, PostUpdateRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix='/posts', tags=['posts'])
@@ -38,3 +38,20 @@ async def delete_post(
         )
     
     return True
+
+@router.put("/{post_id}", response_model=PostResponse)
+async def update_post(
+    post: Post = user_has_access('update'), 
+    update_data: PostUpdateRequest = Body(...),
+    user: User = require_role('user'),
+    db: AsyncSession = Depends(get_db)
+):
+    service = PostService(PostRepository(db))
+    post = await service.get_post_by_id(post.id)
+
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    
+    if not await service.update_post(post.id, update_data.description):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    return await service.update_post(post.id, update_data.description)
