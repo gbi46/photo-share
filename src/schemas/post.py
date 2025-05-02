@@ -31,7 +31,6 @@ class PostResponse(BaseModel):
     user_id: UUID
     description: Optional[str] = None
     image_url: str
-    location: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     avg_rating: Optional[float] = None
