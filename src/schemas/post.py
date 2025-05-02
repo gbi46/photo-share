@@ -1,6 +1,7 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from pydantic.config import ConfigDict
+from src.conf.config import settings
 from src.schemas.tag import TagsShortResponse
 from src.schemas.user import UserShortResponse
 from typing import List, Optional
@@ -15,7 +16,13 @@ class PostCreateModel(BaseModel):
     title: str
     image_url: str
     description: str
-    tags: List[TagModel]
+    tags: Optional[List[TagModel]]
+
+    @field_validator('tags', mode='after')
+    def max_tags(cls, v):
+        if len(v) > settings.MAX_POST_TAGS:
+            raise ValueError(f"You can only add up to {settings.MAX_POST_TAGS} tags.")
+        return v
 
     model_config = ConfigDict(from_attributes=True)
 
