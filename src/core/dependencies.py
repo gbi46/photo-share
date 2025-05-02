@@ -20,25 +20,24 @@ def user_has_access(access_type):
         if not post:
             raise HTTPException(status_code=404, detail="Post not found")
 
-        # 1. Is author?
+        # is author
         if post.user_id == user.id:
             return post
 
-        # 2. Has elevated role?
+        # is has elevated role
         roles = {r.name for r in user.roles}
         if roles.intersection({"admin", "moderator"}):
             return post
 
-        # 3. Has permission?
+        # is has permission
         user_permissions = {
             p.name for r in user.roles for p in r.permissions
         }
-        if "delete_all_posts" in user_permissions:
+        if f"{access_type}_all_posts" in user_permissions:
             return post
 
-        # If no valid permission
-        if access_type == 'delete':
-            raise HTTPException(status_code=403, detail="You cannot delete this post")
+        # if no valid permission
+        raise HTTPException(status_code=403, detail=f"You cannot {access_type} this post")
 
     return Depends(checker)
 

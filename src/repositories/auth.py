@@ -12,16 +12,7 @@ class AuthRepository:
     async def create_user_roles(self, user: User, role: str):
         user_model = UserModel(self.db)
 
-        if not role == 'user':
-            default_role = await user_model.add_role('user')
-            default_role_name = default_role.name
-
-            user.roles.append(default_role)
-
-            role_repo = RoleRepository(self.db)
-            await role_repo.create_role(default_role_name)
-            await role_repo.create_role_permissions(default_role_name)
-
+        role_repo = RoleRepository(self.db)
         await role_repo.create_role(role)
         await role_repo.create_role_permissions(role)
 

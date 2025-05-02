@@ -6,7 +6,7 @@ from src.schemas.tag import TagsShortResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy.sql.expression import Delete
+from sqlalchemy.sql.expression import Delete, Update
 from uuid import UUID
 
 class PostRepository:
@@ -101,3 +101,15 @@ class PostRepository:
         ]
 
         return post_response
+    
+    async def update_post(self, post_id: UUID, description: str) -> Post:
+        stmt = Update(Post).where(Post.id == post_id).values(
+            description=description,
+            updated_at = datetime.now()
+        )
+        await self.db.execute(stmt)
+        await self.db.commit()
+
+        post = await self.get_post(post_id)
+
+        return post
