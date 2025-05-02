@@ -6,6 +6,7 @@ from src.repositories.post import PostRepository
 from src.services.post import PostService
 from src.schemas.post import PostCreateModel, PostCreateResponse, PostResponse, PostUpdateRequest
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List
 from uuid import UUID
 
 router = APIRouter(prefix='/posts', tags=['posts'])
@@ -65,3 +66,11 @@ async def get_post(
     service = PostService(PostRepository(db))
     
     return await service.get_post_by_id(post_id)
+
+@router.get("/", response_model=List[PostResponse])
+async def get_posts(
+    db: AsyncSession = Depends(get_db), 
+):
+    service = PostService(PostRepository(db))
+    
+    return await service.get_all_posts()
