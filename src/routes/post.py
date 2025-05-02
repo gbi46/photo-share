@@ -1,13 +1,16 @@
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status, UploadFile, File, Form
 from src.core.dependencies import user_has_access, require_role
 from src.database.db import get_db
 from src.database.models import Post, User
 from src.repositories.post import PostRepository
+from src.services.cloudinary import UploadFileService
 from src.services.post import PostService
 from src.schemas.post import PostCreateModel, PostCreateResponse, PostResponse, PostUpdateRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from uuid import UUID
+
+import json
 
 router = APIRouter(prefix='/posts', tags=['posts'])
 
@@ -74,3 +77,21 @@ async def get_posts(
     service = PostService(PostRepository(db))
     
     return await service.get_all_posts()
+
+@router.post("/cloudinary-upload-image")
+async def cloudinary_upload_image(
+    file: UploadFile = File(...),
+    filters_json: str = Form(...),
+    user: User = require_role('user'),
+):
+    try:
+        filters = json.loads(filters_json)
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid JSON format for filters"
+        )
+    
+    image_url = await UploadFileService.upload_file(file=file, filters=filters)
+
+    return {"image_url": image_url}
