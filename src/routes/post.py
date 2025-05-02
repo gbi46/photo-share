@@ -6,6 +6,7 @@ from src.repositories.post import PostRepository
 from src.services.post import PostService
 from src.schemas.post import PostCreateModel, PostCreateResponse, PostResponse, PostUpdateRequest
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 
 router = APIRouter(prefix='/posts', tags=['posts'])
 
@@ -55,3 +56,12 @@ async def update_post(
     if not await service.update_post(post.id, update_data.description):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
     return await service.update_post(post.id, update_data.description)
+
+@router.get("/{post_id}", response_model=PostResponse)
+async def get_post(
+    post_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    service = PostService(PostRepository(db))
+    
+    return await service.get_post_by_id(post_id)
