@@ -1,6 +1,7 @@
 from src.database.models import User
 from src.repositories.post import PostRepository
 from src.schemas.post import PostResponse
+from typing import List
 from uuid import UUID
 
 class PostService:
@@ -27,3 +28,6 @@ class PostService:
         description: str = None
     ) -> PostResponse:
         return await self.post_repo.update_post(post_id, description)
+    
+    async def get_all_posts(self) -> List[PostResponse]:
+        return await self.post_repo.get_posts()

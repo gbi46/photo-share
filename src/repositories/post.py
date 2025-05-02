@@ -113,3 +113,38 @@ class PostRepository:
         post = await self.get_post(post_id)
 
         return post
+    
+    async def get_posts(self) -> list[Post]:
+        stmt = (select(
+            Post
+        ).join(Post.user)
+        .options(
+            joinedload(Post.user),
+            selectinload(Post.tags).selectinload(PostTag.tag),
+            selectinload(Post.ratings)
+        ).order_by(Post.created_at.desc())
+        )
+
+        result = await self.db.execute(stmt)
+
+        posts = result.scalars().all()
+    
+        posts_response = []
+
+        for post in posts:
+            avg = round(sum(r.rating for r in post.ratings) / len(post.ratings), 2) if post.ratings else None
+            count = len(post.ratings)
+
+            post_response = PostResponse.model_validate(post)
+            post_response.avg_rating = avg
+            post_response.rating_count = count
+
+            post_response.tags = [
+            TagsShortResponse.model_validate(tag_rel.tag)
+                for tag_rel in post.tags
+                if tag_rel.tag is not None
+            ]
+
+            posts_response.append(post_response)
+
+        return posts_response
