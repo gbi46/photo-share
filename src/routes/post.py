@@ -5,6 +5,7 @@ from src.database.models import Post, User
 from src.repositories.post import PostRepository
 from src.services.cloudinary import UploadFileService
 from src.services.post import PostService
+from src.services.qr import QrCodeService
 from src.schemas.post import PostCreateModel, PostCreateResponse, PostResponse, PostUpdateRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
@@ -95,3 +96,14 @@ async def cloudinary_upload_image(
     image_url = await UploadFileService.upload_file(file=file, filters=filters)
 
     return {"image_url": image_url}
+
+@router.post("/generate-qr-code")
+async def generate_qr_code_from_url(
+    url: str = Body(..., embed=True),
+    user: User = require_role('user'),
+):
+    try:
+        qr_code_data = QrCodeService.generate_qr_code(url)
+        return qr_code_data
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"QR generation failed: {str(e)}")
