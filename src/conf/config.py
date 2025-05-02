@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     CLD_NAME: str
     CLD_API_KEY: int
     CLD_API_SECRET: str
+    MAX_POST_TAGS: int
 
     model_config = ConfigDict(
         env_file=env_file,                    
