@@ -20,3 +20,9 @@ class CommentService:
     
     async def update_comment(self, comment_id: UUID, update_data: CommentUpdateRequest):
         return await self.comment_repo.update(comment_id, update_data.message)
+    
+    async def delete_comment(self, comment_id: UUID, user: User):
+        comment = await self.comment_repo.get_comment(comment_id)
+        if comment is None:
+            raise HTTPException(status_code=404, detail="Comment not found")
+        return await self.comment_repo.delete(comment_id)
