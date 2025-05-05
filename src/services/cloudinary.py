@@ -14,13 +14,12 @@ class UploadFileService:
         )
 
     @staticmethod
-    def build_transformation(filters: dict) -> dict:
-        return filters or {}
-
-    @staticmethod
     async def upload_file(
         file: UploadFile,
-        filters: dict = None,
+        width: int,
+        height: int,
+        crop: str,
+        effect: str,
     ) -> str:
         UploadFileService.configure_cloudinary()
 
@@ -28,7 +27,12 @@ class UploadFileService:
             result = cloudinary.uploader.upload(file.file)
             public_id = result.get("public_id")
 
-            transformation = UploadFileService.build_transformation(filters)
+            transformation = {
+                "width": width,
+                "height": height,
+                "crop": crop,
+                "effect": effect
+            }
 
             url_link = cloudinary.CloudinaryImage(public_id).build_url(
                 transformation=transformation,

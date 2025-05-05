@@ -82,18 +82,20 @@ async def get_posts(
 @router.post("/cloudinary-upload-image")
 async def cloudinary_upload_image(
     file: UploadFile = File(...),
-    filters_json: str = Form(...),
+    width: str = Form(...),
+    height: str = Form(...),
+    crop: str = Form(...),
+    effect: str = Form(...),
     user: User = require_role('user'),
 ):
-    try:
-        filters = json.loads(filters_json)
-    except json.JSONDecodeError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid JSON format for filters"
-        )
     
-    image_url = await UploadFileService.upload_file(file=file, filters=filters)
+    image_url = await UploadFileService.upload_file(
+        file=file, 
+        width=width,
+        height=height,
+        crop=crop,
+        effect=effect
+    )
 
     return {"image_url": image_url}
 
