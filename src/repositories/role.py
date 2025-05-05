@@ -14,7 +14,8 @@ class RoleRepository:
 
         moderator_permissions = user_permissions + [
             'update_all_posts',
-            'delete_all_comments'
+            'delete_all_comments',
+            'update_all_comments'
         ]
 
         admin_permissions = moderator_permissions + [

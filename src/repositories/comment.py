@@ -3,6 +3,7 @@ from src.database.models import Comment
 from uuid import UUID
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.expression import Update
 
 class CommentRepository:
     def __init__(self, db):
@@ -44,3 +45,15 @@ class CommentRepository:
             .options(joinedload(Comment.user))
         )
         return result.scalar_one_or_none()
+    
+    async def update(self, comment_id: UUID, message: str) -> Comment | None:
+        stmt = Update(Comment).where(Comment.id == comment_id).values(
+            message = message,
+            updated_at = datetime.now()
+        )
+        await self.db.execute(stmt)
+        await self.db.commit()
+
+        comment = await self.get_comment(comment_id)
+
+        return comment

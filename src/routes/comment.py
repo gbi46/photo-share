@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends
-from src.core.dependencies import require_role
-from src.database.models import User
+from fastapi import APIRouter, Body, Depends
+from src.core.dependencies import require_role, user_has_access_to_comment
+from src.database.models import Comment, User
 from src.database.db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repositories.comment import CommentRepository
-from src.schemas.comment import CommentCreateModel, CommentResponse
+from src.schemas.comment import (
+    CommentCreateModel, CommentResponse, CommentUpdateRequest, CommentUpdateResponse
+)
 from src.services.comment import CommentService
 from uuid import UUID
 
@@ -35,3 +37,13 @@ async def get_comment(
 ):
     service = CommentService(CommentRepository(db))
     return await service.get_comment(comment_id)
+
+@router.put("/comments/{comment_id}", response_model=CommentUpdateResponse)
+async def update_comment(
+    comment: Comment = user_has_access_to_comment('update'),
+    update_data: CommentUpdateRequest = Body(...),
+    user: User = require_role("user"),
+    db: AsyncSession = Depends(get_db),
+):
+    service = CommentService(CommentRepository(db))
+    return await service.update_comment(comment.id, update_data)
