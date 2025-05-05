@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Body, Depends
-from src.core.dependencies import require_role, user_has_access_to_comment
+from src.core.dependencies import require_permission, require_role, user_has_access_to_comment
 from src.database.models import Comment, User
 from src.database.db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,3 +47,12 @@ async def update_comment(
 ):
     service = CommentService(CommentRepository(db))
     return await service.update_comment(comment.id, update_data)
+
+@router.delete("/comments/{comment_id}")
+async def delete_comment(
+    comment_id: UUID,
+    user: User = require_permission("delete_all_comments"),
+    db: AsyncSession = Depends(get_db),
+):
+    service = CommentService(CommentRepository(db))
+    return {"success": await service.delete_comment(comment_id, user)}

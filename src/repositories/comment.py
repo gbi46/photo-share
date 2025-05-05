@@ -3,7 +3,7 @@ from src.database.models import Comment
 from uuid import UUID
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
-from sqlalchemy.sql.expression import Update
+from sqlalchemy.sql.expression import Delete, Update
 
 class CommentRepository:
     def __init__(self, db):
@@ -57,3 +57,15 @@ class CommentRepository:
         comment = await self.get_comment(comment_id)
 
         return comment
+    
+    async def delete(self, comment_id: UUID) -> bool:
+        comment = await self.get_comment(comment_id)
+        if comment is None:
+            return False
+        
+        stmt = Delete(Comment).where(Comment.id == comment_id)
+        
+        await self.db.execute(stmt)
+        await self.db.commit()
+        
+        return True
