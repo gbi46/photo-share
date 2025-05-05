@@ -22,3 +22,17 @@ class CommentResponse(BaseModel):
     model_config = {
         "from_attributes": True 
     }
+
+class CommentUpdateRequest(BaseModel):
+    message: str
+
+    model_config = {
+        "from_attributes": True
+    }
+
+class CommentUpdateResponse(BaseModel):
+    message: str
+
+    model_config = {
+        "from_attributes": True
+    }

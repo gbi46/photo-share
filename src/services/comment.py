@@ -1,4 +1,7 @@
+from fastapi import HTTPException
+from src.database.models import User
 from src.repositories.comment import CommentRepository
+from src.schemas.comment import CommentUpdateRequest
 from uuid import UUID
 
 class CommentService:
@@ -14,3 +17,6 @@ class CommentService:
 
     def get_comment(self, comment_id):
         return self.comment_repo.get_comment(comment_id)
+    
+    async def update_comment(self, comment_id: UUID, update_data: CommentUpdateRequest):
+        return await self.comment_repo.update(comment_id, update_data.message)

@@ -1,5 +1,5 @@
 from src.database.db import get_db 
-from src.database.models import Post, User
+from src.database.models import Comment, Post, User
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from src.services.auth import get_current_user
@@ -41,6 +41,40 @@ def user_has_access(access_type):
 
     return Depends(checker)
 
+def user_has_access_to_comment(access_type):
+    async def checker(
+        comment_id: UUID,
+        db: AsyncSession = Depends(get_db),
+        user: User = Depends(get_current_user),
+    ) -> Comment:
+        stmt = select(Comment).where(Comment.id == comment_id)
+        result = await db.execute(stmt)
+        comment = result.scalar_one_or_none()
+
+        if not comment:
+            raise HTTPException(status_code=404, detail="Comment not found")
+
+        # is author
+        print(f"Comment user id: {comment.user_id}")
+        print(f"User id: {user.id}")
+        if comment.user_id == user.id:
+            return comment
+
+        # is has elevated role
+        roles = {r.name for r in user.roles}
+        if roles.intersection({"admin", "moderator"}):
+            # is has permission
+            user_permissions = {
+                p.name for r in user.roles for p in r.permissions
+            }
+            if f"{access_type}_all_comments" in user_permissions:
+                return comment
+
+        # if no valid permission
+        raise HTTPException(status_code=403, detail=f"You cannot {access_type} this comment")
+
+    return Depends(checker)
+
 def require_role(role_name: str):
     async def role_checker(current_user: User = Depends(get_current_user)):
         if not any(role.name == role_name for role in current_user.roles):
@@ -73,4 +107,3 @@ def require_permission(permission_name: str):
             )
         return user
     return Depends(checker)
-
