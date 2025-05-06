@@ -34,9 +34,12 @@ async def signup(user: UserCreate = Body(...), db: AsyncSession = Depends(get_db
 @router.post("/login", response_model=TokenModel)
 async def login(user_data: UserLogin, db: AsyncSession = Depends(get_db)):
     user_model = UserModel(db)
-    db_user = await user_model.get_user_by_username(user_data.username)
-    if not db_user or not security.verify_password(user_data.password, db_user.password):
+    user = await user_model.get_user_by_username(user_data.username)
+    if not user or not security.verify_password(user_data.password, user.password):
         raise HTTPException(status_code=400, detail="Invalid credentials")
+    
+    if not await user_model.is_active(user):
+        raise HTTPException(status_code=403, detail="User is not active")
 
-    tokens = security.generate_tokens(db_user.id)
+    tokens = security.generate_tokens(user.id)
     return tokens
