@@ -1,9 +1,9 @@
-from src.database.models import User
 from src.repositories.user import UserRepository
 from src.schemas.user import (
     UserAccountResponse, UserProfileResponse, UserUpdateRequest, 
     UserUpdateStatusRequest, UserUpdateStatusResponse
 )
+from typing import List
 from uuid import UUID
 
 class UserService:
@@ -30,3 +30,6 @@ class UserService:
         data: UserUpdateStatusRequest
     ) -> UserUpdateStatusResponse:
         return await self.user_repo.update_user_status(account_id, data)
+    
+    async def get_all_users(self) -> List[UserProfileResponse]:
+        return await self.user_repo.get_all_users()

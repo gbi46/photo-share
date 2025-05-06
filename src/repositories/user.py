@@ -98,3 +98,31 @@ class UserRepository:
         account = await self.get_user_account(account_id)
 
         return account
+    
+    async def get_all_users(self) -> list[User]:
+        post_count_subq = (
+            select(func.count(Post.id))
+            .where(Post.user_id == User.id)
+            .scalar_subquery()
+        )
+
+        comment_count_subq = (
+            select(func.count(Comment.id))
+            .where(Comment.user_id == User.id)
+            .scalar_subquery()
+        )
+
+        stmt = (
+            select(
+                User,
+                post_count_subq.label("posts_count"),
+                comment_count_subq.label("comments_count")
+            )
+            .options(selectinload(User.roles))
+        )
+
+        result = await self.db.execute(stmt)
+
+        users = result.scalars().all()
+    
+        return users
