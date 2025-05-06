@@ -8,8 +8,8 @@ from src.services.user import UserService
 
 router = APIRouter(prefix='/users', tags=['users'])
 
-@router.get('/profile/{user_id}', response_model=UserProfileResponse)
+@router.get('/profile/{username}', response_model=UserProfileResponse)
 async def get_user_profile(user = require_role('user'), db: AsyncSession = Depends(get_db)):
     service = UserService(UserRepository(db))
     
-    return await service.get_profile_by_id(user.id)
+    return await service.get_profile_by_username(user.username)
