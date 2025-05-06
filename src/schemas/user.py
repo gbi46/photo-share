@@ -63,3 +63,13 @@ class UserUpdateRequest(BaseModel):
     phone: Optional[str]
 
     model_config = ConfigDict(from_attributes=True)
+
+class UserUpdateStatusRequest(BaseModel):
+    status: UserStatusEnum
+
+    model_config = ConfigDict(from_attributes=True)
+
+class UserUpdateStatusResponse(BaseModel):
+    status: UserStatusEnum
+
+    model_config = ConfigDict(from_attributes=True)

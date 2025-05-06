@@ -3,7 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.db import get_db
 from src.core.dependencies import can_view_account, can_update_account, require_role
 from src.repositories.user import UserRepository
-from src.schemas.user import UserAccountResponse, UserProfileResponse, UserUpdateRequest
+from src.schemas.user import (
+    UserAccountResponse, UserProfileResponse, UserUpdateRequest, 
+    UserUpdateStatusRequest, UserUpdateStatusResponse
+)
 from src.services.user import UserService
 
 router = APIRouter(prefix='/users', tags=['users'])
@@ -38,3 +41,18 @@ async def update_account(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
     
     return await service.update_account(account.id, update_data)
+
+@router.put("/{account_id}/status", response_model=UserUpdateStatusResponse)
+async def update_account_status(
+    user = require_role('admin'),
+    update_data: UserUpdateStatusRequest = Body(...),
+    account = can_update_account(), 
+    db: AsyncSession = Depends(get_db)
+):
+    service = UserService(UserRepository(db))
+    account = await service.get_account(account.id)
+
+    if account is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
+    
+    return await service.update_account_status(account.id, update_data)

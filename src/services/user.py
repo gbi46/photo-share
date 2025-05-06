@@ -1,5 +1,9 @@
+from src.database.models import User
 from src.repositories.user import UserRepository
-from src.schemas.user import UserAccountResponse, UserProfileResponse, UserUpdateRequest
+from src.schemas.user import (
+    UserAccountResponse, UserProfileResponse, UserUpdateRequest, 
+    UserUpdateStatusRequest, UserUpdateStatusResponse
+)
 from uuid import UUID
 
 class UserService:
@@ -19,3 +23,10 @@ class UserService:
         data: UserUpdateRequest
     ) -> UserAccountResponse:
         return await self.user_repo.update_user(account_id, data)
+    
+    async def update_account_status(
+        self,
+        account_id: UUID,
+        data: UserUpdateStatusRequest
+    ) -> UserUpdateStatusResponse:
+        return await self.user_repo.update_user_status(account_id, data)
