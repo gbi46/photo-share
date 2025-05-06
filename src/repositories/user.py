@@ -4,7 +4,8 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from src.database.models import Comment, Post, User
-from src.schemas.user import UserProfileResponse
+from src.schemas.user import UserAccountResponse, UserProfileResponse
+from uuid import UUID
 
 class UserRepository:
     def __init__(self, db: AsyncSession):
@@ -49,3 +50,15 @@ class UserRepository:
         }
 
         return UserProfileResponse(**data)
+    
+    async def get_user_account(self, user_id: UUID) -> UserAccountResponse:
+        stmt = (select(User).where(User.id == user_id))
+
+        result = await self.db.execute(stmt)
+
+        user = result.scalar_one_or_none()
+
+        if not user:
+           raise HTTPException(status_code=404, detail="User not found") 
+        
+        return user

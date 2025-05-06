@@ -75,6 +75,30 @@ def user_has_access_to_comment(access_type):
 
     return Depends(checker)
 
+def can_view_account():
+    async def account_checker(
+        account_id: UUID,
+        db: AsyncSession = Depends(get_db),
+        user: User = Depends(get_current_user)
+    ):
+        stmt = select(User).where(User.id == account_id)
+        result = await db.execute(stmt)
+        account = result.scalar_one_or_none()
+
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found")
+        
+        if account_id == user.id:
+            return account
+        
+        roles = {r.name for r in user.roles}
+        if roles.intersection({"admin"}):
+            return account
+        
+        raise HTTPException(status_code=403, detail=f"You cannot view this account")
+    
+    return Depends(account_checker)
+
 def require_role(role_name: str):
     async def role_checker(current_user: User = Depends(get_current_user)):
         if not any(role.name == role_name for role in current_user.roles):
