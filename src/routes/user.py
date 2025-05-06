@@ -8,6 +8,7 @@ from src.schemas.user import (
     UserUpdateStatusRequest, UserUpdateStatusResponse
 )
 from src.services.user import UserService
+from typing import List
 
 router = APIRouter(prefix='/users', tags=['users'])
 
@@ -56,3 +57,12 @@ async def update_account_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
     
     return await service.update_account_status(account.id, update_data)
+
+@router.get('/', response_model=List[UserAccountResponse])
+async def get_all_users(
+    user = require_role('admin'),
+    db: AsyncSession = Depends(get_db)
+):
+    service = UserService(UserRepository(db))
+    
+    return await service.get_all_users()
