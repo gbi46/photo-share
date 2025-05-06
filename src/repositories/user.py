@@ -10,7 +10,7 @@ class UserRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_user_profile(self, user_id) -> User:
+    async def get_user_profile_by_username(self, username) -> User:
         post_count_subq = (
             select(func.count(Post.id))
             .where(Post.user_id == User.id)
@@ -30,7 +30,7 @@ class UserRepository:
                 comment_count_subq.label("comments_count")
             )
             .options(selectinload(User.roles))
-            .where(User.id == user_id)
+            .where(User.username == username)
         )
 
         result = await self.db.execute(stmt)
