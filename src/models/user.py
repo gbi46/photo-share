@@ -1,3 +1,4 @@
+from sqlalchemy import and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from src.database.models import Role, User
@@ -21,3 +22,19 @@ class UserModel:
     async def get_user_by_username(self, username: str):
         result = await self.db.execute(select(User).filter(User.username == username))
         return result.scalars().first()
+    
+    async def is_active(self, user: User):
+        result = await self.db.execute(
+            select(User).where(
+                and_(User.id == user.id, User.status == 'active')
+            )
+        )
+
+        user = result.scalars().first()
+
+        print(user)
+
+        if not user:
+            return False
+
+        return True
