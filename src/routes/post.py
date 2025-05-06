@@ -88,7 +88,6 @@ async def cloudinary_upload_image(
     effect: str = Form(...),
     user: User = require_role('user'),
 ):
-    
     image_url = await UploadFileService.upload_file(
         file=file, 
         width=width,

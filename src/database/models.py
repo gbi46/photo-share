@@ -29,9 +29,12 @@ class User(Base):
     __tablename__ = 'users'
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     username: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    first_name: Mapped[str] = mapped_column(String, unique=False, nullable=True)
+    last_name: Mapped[str] = mapped_column(String, unique=False, nullable=True)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String, nullable=False)
     img_link: Mapped[str] = mapped_column(String, nullable=True)
+    phone: Mapped[str] = mapped_column(String, unique=False, nullable=True)
     status: Mapped[bool] = mapped_column(Enum(UserStatusEnum), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now())
