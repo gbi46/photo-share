@@ -1,10 +1,13 @@
+from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.expression import Update
 from src.database.models import Comment, Post, User
-from src.schemas.user import UserProfileResponse
+from src.schemas.user import UserAccountResponse, UserProfileResponse, UserUpdateRequest
+from uuid import UUID
 
 class UserRepository:
     def __init__(self, db: AsyncSession):
@@ -49,3 +52,33 @@ class UserRepository:
         }
 
         return UserProfileResponse(**data)
+    
+    async def get_user_account(self, user_id: UUID) -> UserAccountResponse:
+        stmt = (select(User).where(User.id == user_id))
+
+        result = await self.db.execute(stmt)
+
+        user = result.scalar_one_or_none()
+
+        if not user:
+           raise HTTPException(status_code=404, detail="User not found") 
+        
+        return user
+    
+    async def update_user(self, account_id: UUID, data: UserUpdateRequest) -> User:
+        stmt = Update(User).where(User.id == account_id).values(
+            username=data.username,
+            first_name=data.first_name,
+            last_name=data.last_name,
+            email=data.email,
+            img_link=data.img_link,
+            phone=data.phone,
+            updated_at = datetime.now()
+        )
+
+        await self.db.execute(stmt)
+        await self.db.commit()
+
+        account = await self.get_user_account(account_id)
+
+        return account
