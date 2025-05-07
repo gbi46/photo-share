@@ -1,20 +1,32 @@
+
 from fastapi.testclient import TestClient
 from main import app
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from src.core.security import security
-from src.database.db import get_db
 from src.database.models import Base
+from src.database.db import get_db
 
 import pytest
-import pytest_asyncio
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+DATABASE_URL = "sqlite:///./test.db"
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    DATABASE_URL, connect_args={"check_same_thread": False}
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+@pytest.fixture(scope="module")
+def session():
+    # Create the database
+
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @pytest.fixture(scope="module")
 def client(session):
@@ -31,28 +43,5 @@ def client(session):
     yield TestClient(app)
 
 @pytest.fixture(scope="module")
-def session():
-    # Create the database
-
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-test_user = {"username": "neo", "email": "neo@example.com", "password": "123456789"}
-
-@pytest.fixture(scope="module")
 def user():
-    return {"username": "deadpool", "email": "deadpool@example.com", "password": "123456789"}
-
-@pytest_asyncio.fixture()
-async def get_token():
-    user_data = {"sub": test_user["email"]}
-
-    token = await security.create_token(data=user_data)
-
-    return token
+    return {"username": "neo", "email": "neo@example.com", "password": "123456789"}
