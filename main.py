@@ -1,4 +1,4 @@
-from src.routes import auth, comment, post, user
+from src.routes import auth, cloudinary, comment, post, user
 from fastapi import FastAPI
 
 import uvicorn
@@ -6,6 +6,7 @@ import uvicorn
 app = FastAPI()
 
 app.include_router(auth.router)
+app.include_router(cloudinary.router)
 app.include_router(comment.router)
 app.include_router(post.router)
 app.include_router(user.router)
