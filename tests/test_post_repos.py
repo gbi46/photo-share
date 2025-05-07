@@ -44,8 +44,6 @@ async def test_user(db_session):
     await db_session.refresh(user)
     return user
 
-print(datetime.now().strftime('%Y%m%d%H%M%S'))
-
 @pytest.mark.asyncio
 async def test_create_post(db_session: AsyncSession, test_user: User):
     repo = PostRepository(db_session)
