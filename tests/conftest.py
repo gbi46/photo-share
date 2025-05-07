@@ -8,10 +8,11 @@ from sqlalchemy.orm import sessionmaker
 from src.core.security import security
 from src.database.models import Base, User
 from src.database.db import get_db
+from src.services.user import UserService
 from unittest.mock import AsyncMock, patch, MagicMock
 from uuid import uuid4
 
-import pytest, time
+import asyncio, pytest, time
 
 DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -34,18 +35,9 @@ engine = create_engine(
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-@pytest.fixture(scope="module")
-def session():
-    # Create the database
-
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+@pytest.fixture(scope="session")
+def event_loop():
+    return asyncio.get_event_loop()
 
 @pytest.fixture(scope="module")
 def client(session):
@@ -101,3 +93,19 @@ def get_token(session):
 def mock_upload():
     with patch("src.services.cloudinary.UploadFileService.upload_file", new_callable=AsyncMock) as mock:
         yield mock
+
+@pytest.fixture
+def mock_user_repo():
+    return AsyncMock()
+
+@pytest.fixture
+def user_service(mock_user_repo):
+    return UserService(user_repo=mock_user_repo)
+
+@pytest.fixture(scope="session")
+async def tables(engine):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
