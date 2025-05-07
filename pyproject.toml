@@ -21,6 +21,7 @@ cloudinary = "^1.44.0"
 python-multipart = "^0.0.20"
 qrcode = "^8.2"
 pillow = "^11.2.1"
+aiosqlite = "^0.21.0"
 
 [build-system]
 requires = ["poetry-core"]
