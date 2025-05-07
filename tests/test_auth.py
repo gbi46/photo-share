@@ -1,9 +1,8 @@
 from datetime import datetime
 from fastapi.testclient import TestClient
 from main import app
-from src.database.models import User
 
-import asyncio, pytest
+import pytest
 
 @pytest.fixture(scope="session")
 def client() -> TestClient:
@@ -26,8 +25,8 @@ async def test_signup_user(client):
 
 def test_login_user(client):
     payload = {
-        "username": f"new_user",
-        "password": "securepassword"
+        "username": f"neo",
+        "password": "123456"
     }
 
     response = client.post("/auth/login", json=payload)
