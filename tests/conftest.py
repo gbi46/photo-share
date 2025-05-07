@@ -52,10 +52,7 @@ def user():
 @pytest_asyncio.fixture()
 async def get_token():
     user_data = {"sub": test_user["email"]}
-    print(f"User Data: {user_data}")
 
     token = await security.create_token(data=user_data)
-
-    print(f"token from get token: {token}")
 
     return token
