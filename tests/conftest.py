@@ -1,7 +1,9 @@
 
+from datetime import datetime
 from fastapi.testclient import TestClient
 from main import app
 from sqlalchemy import create_engine, select
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from src.core.security import security
 from src.database.models import Base, User
@@ -9,9 +11,23 @@ from src.database.db import get_db
 from unittest.mock import AsyncMock, patch, MagicMock
 from uuid import uuid4
 
-import pytest
+import pytest, time
 
-DATABASE_URL = "sqlite:///./test.db"
+DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+@pytest.fixture(scope="module")
+async def db_engine():
+    engine = create_async_engine(DATABASE_URL, echo=False)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield engine
+    await engine.dispose()
+
+@pytest.fixture(scope="function")
+async def db_session(db_engine):
+    async_session = async_sessionmaker(bind=db_engine, expire_on_commit=False)
+    async with async_session() as session:
+        yield session
 
 engine = create_engine(
     DATABASE_URL, connect_args={"check_same_thread": False}
@@ -53,16 +69,22 @@ def fake_db():
 def fake_current_user():
     return User(id=uuid4(), username="username", status="active")
 
-@pytest.fixture(scope="module", autouse=True)
-def setup_user(session):
+@pytest.fixture
+async def test_user(db_session):
+    time.sleep(1)  # Ensure unique timestamp for username and email
     user = User(
-        username="neo",
-        email="neo@example.com",
-        password="hashed_password_here",
-        status="active"
+        id=uuid4(),
+        username=f"tester{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        email=f"tester{datetime.now().strftime('%Y%m%d%H%M%S')}@example.com",
+        password="hashedpw",
+        status="active",
+        created_at=datetime.now(),
+        updated_at=datetime.now()
     )
-    session.add(user)
-    session.commit()
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
 
 @pytest.fixture
 def get_token(session):
