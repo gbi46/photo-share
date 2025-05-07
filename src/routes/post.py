@@ -1,17 +1,14 @@
-from fastapi import APIRouter, Body, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from src.core.dependencies import user_has_access, require_role
 from src.database.db import get_db
 from src.database.models import Post, User
 from src.repositories.post import PostRepository
-from src.services.cloudinary import UploadFileService
 from src.services.post import PostService
 from src.services.qr import QrCodeService
 from src.schemas.post import PostCreateModel, PostCreateResponse, PostResponse, PostUpdateRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from uuid import UUID
-
-import json
 
 router = APIRouter(prefix='/posts', tags=['posts'])
 
@@ -78,25 +75,6 @@ async def get_posts(
     service = PostService(PostRepository(db))
     
     return await service.get_all_posts()
-
-@router.post("/cloudinary-upload-image")
-async def cloudinary_upload_image(
-    file: UploadFile = File(...),
-    width: str = Form(...),
-    height: str = Form(...),
-    crop: str = Form(...),
-    effect: str = Form(...),
-    user: User = require_role('user'),
-):
-    image_url = await UploadFileService.upload_file(
-        file=file, 
-        width=width,
-        height=height,
-        crop=crop,
-        effect=effect
-    )
-
-    return {"image_url": image_url}
 
 @router.post("/generate-qr-code")
 async def generate_qr_code_from_url(
