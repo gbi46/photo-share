@@ -5,17 +5,26 @@ from main import app
 from sqlalchemy import create_engine, select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from src.core.security import security
-from src.database.models import Base, Comment, User
+from src.database.models import Base, Comment, User, UserStatusEnum
 from src.database.db import get_db
 from src.repositories.comment import CommentRepository
 from src.services.auth import AuthService
 from src.services.user import UserService
+from src.services.utils import logger
 from unittest.mock import AsyncMock, patch, MagicMock
 from uuid import uuid4
 
 import asyncio, pytest, time
 
-DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+
+@pytest.fixture(scope="module")
+async def db_engine():
+    engine = create_async_engine(DATABASE_URL, echo=False)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield engine
+    await engine.dispose()
 
 engine = create_engine(
     DATABASE_URL, connect_args={"check_same_thread": False}
@@ -25,7 +34,10 @@ engine = create_engine(
 def auth_repo(mock_db):
     repo = MagicMock()
     repo.db = mock_db
-    repo.create_user = AsyncMock(return_value={"id": 1, "email": "test@example.com"})
+    repo.create_user = AsyncMock(return_value={
+        "id": 1, 
+        "email": f"test{datetime.now().strftime('%Y%m%d%H%M%S')}@example.com"}
+    )
     return repo
 
 @pytest.fixture
@@ -35,16 +47,8 @@ def auth_service(auth_repo):
 @pytest.mark.asyncio
 async def test_create_user(auth_service, user_payload):
     result = await auth_service.create(user_payload, "user")
-    assert result["email"] == "test@example.com"
+    assert result["email"] == f"test{datetime.now().strftime('%Y%m%d%H%M%S')}@example.com"
     auth_service.auth_repo.create_user.assert_awaited_once_with(user_payload, "user")
-
-@pytest.fixture(scope="module")
-async def db_engine():
-    engine = create_async_engine(DATABASE_URL, echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    yield engine
-    await engine.dispose()
 
 @pytest.fixture(scope="function")
 async def db_session(db_engine):
@@ -109,15 +113,26 @@ def get_token(session):
 
     return token
 
+@pytest.fixture(autouse=True)
+def override_get_db(db_session):
+    async def _get_db_override():
+        yield db_session
+    app.dependency_overrides[get_db] = _get_db_override
+    yield
+    app.dependency_overrides.clear()
+
 @pytest.fixture
 async def test_user(db_session):
     time.sleep(1)  # Ensure unique timestamp for username and email
+    username=f"tester{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    logger.info(f"Creating test user with username: {username}")
+    
     user = User(
         id=uuid4(),
-        username=f"tester{datetime.now().strftime('%Y%m%d%H%M%S')}",
-        email=f"tester{datetime.now().strftime('%Y%m%d%H%M%S')}@example.com",
-        password="hashedpw",
-        status="active",
+        username=username,
+        email=f"{username}@example.com",
+        password=security.get_password_hash("123456"),
+        status=UserStatusEnum.active,
         created_at=datetime.now(),
         updated_at=datetime.now()
     )

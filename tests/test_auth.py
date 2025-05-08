@@ -1,12 +1,16 @@
 from datetime import datetime
+from fastapi import status
 from fastapi.testclient import TestClient
 from main import app
+from sqlalchemy.future import select
 from src.core.security import security
-from src.database.models import User
+from src.database.db import get_db
+from src.database.models import User, UserStatusEnum
 from src.repositories.auth import AuthRepository
 from src.schemas.user import UserCreate
 from src.services.auth import get_current_user
-from unittest.mock import AsyncMock, patch, MagicMock
+from src.services.utils import logger
+from unittest.mock import ANY, AsyncMock, patch, MagicMock
 from uuid import UUID, uuid4
 
 import pytest
@@ -17,49 +21,84 @@ def client() -> TestClient:
         yield c
 
 @pytest.mark.asyncio
-async def test_signup_user(client):
+async def test_signup_user(client, db_session):
+    username = f"user_{datetime.now().strftime('%H%M%S')}"
+
     payload = {
-        "username": f"new_user{datetime.now().strftime('%Y%m%d%H%M%S')}",
-        "email": f"new_email{datetime.now().strftime('%Y%m%d%H%M%S')}@example.com",
+        "username": username,
+        "email": f"{username}@example.com",
         "password": "securepassword"
     }
 
     response = client.post("/auth/signup", json=payload)
 
     assert response.status_code == 200
+
+    result = await db_session.execute(select(User).where(User.username == username))
+    user = result.scalar_one_or_none()
+
     data = response.json()
     assert data == True
+    logger.info(f"Saved user password (hashed): {user.password}, username: {user.username}")
 
 @pytest.mark.asyncio
-async def test_signup_user_exists(client, db_session):
-    existing_user = User(
-        username="user2",
-        email="user2@example.com",
-        password=security.get_password_hash("securepassword"),
-        status="active",
-    )
-    db_session.add(existing_user)
-    await db_session.commit()
+@patch("src.routes.auth.UserModel")
+async def test_signup_user_already_exists(mock_user_model_class, client):
+    mock_user_model = mock_user_model_class.return_value
+    mock_user_model.get_user_by_username = AsyncMock(return_value=True)
 
     payload = {
-        "username": "user2",
-        "email": "user2@example.com",
+        "username": "existing_user",
+        "email": "test@example.com",
         "password": "securepassword"
     }
 
     response = client.post("/auth/signup", json=payload)
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == "Username already exists"
+    mock_user_model.get_user_by_username.assert_awaited_once_with("existing_user")
+
+@patch("src.routes.auth.UserModel")
+@patch("src.routes.auth.AuthService")
+async def test_signup_first_user_becomes_admin(mock_auth_service_class, mock_user_model_class, client):
+    result_mock = MagicMock()
+    
+    # Setup
+    mock_user_model = mock_user_model_class.return_value
+    mock_user_model.get_user_by_username = AsyncMock(return_value=None)
+
+    result_mock.scalars.return_value.first.return_value = None
+
+    async def fake_get_db():
+        db = AsyncMock()
+        db.execute = AsyncMock(return_value=result_mock)
+        yield db
+
+    app.dependency_overrides[get_db] = fake_get_db
+
+    mock_auth_service = mock_auth_service_class.return_value
+    mock_auth_service.create = AsyncMock(return_value=True)
+
+    payload = {
+        "username": "admin_candidate",
+        "email": "admin@example.com",
+        "password": "strongpassword"
+    }
+
+    response = client.post("/auth/signup", json=payload)
+
+    assert response.status_code == 200
+    mock_auth_service.create.assert_awaited_once_with(ANY, "admin")
 
 @pytest.mark.asyncio
 @patch("src.repositories.auth.security.get_password_hash", return_value="hashed_pass")
 @patch.object(AuthRepository, "create_user_roles", new_callable=AsyncMock)
 async def test_create_user(mock_create_roles, mock_hash, async_fake_db):
     user_data = UserCreate(
-        username="testuser",
-        email="test@example.com",
-        password="supersecret"
+        username=f"testuser{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        email=f"test{datetime.now().strftime('%Y%m%d%H%M%S')}@example.com",
+        password="123456"
     )
 
     fake_role = MagicMock(name="role")
@@ -74,7 +113,7 @@ async def test_create_user(mock_create_roles, mock_hash, async_fake_db):
     result = await repo.create_user(user_data, "user")
 
     # Assertions
-    mock_hash.assert_called_once_with("supersecret")
+    mock_hash.assert_called_once_with("123456")
     mock_create_roles.assert_awaited_once()
     async_fake_db.add.assert_called_once()
     async_fake_db.commit.assert_called_once()
@@ -82,30 +121,41 @@ async def test_create_user(mock_create_roles, mock_hash, async_fake_db):
 
     assert result is True
 
-def test_login_user(client):
+def test_login_user(client, test_user):
     payload = {
-        "username": f"neo",
+        "username": "tester20250508172259",
         "password": "123456"
     }
 
     response = client.post("/auth/login", json=payload)
+
+    print("Rersponse:", response.json())
 
     assert response.status_code == 200
     data = response.json()
     assert data["token_type"] == 'bearer'
 
 def test_login_wrong_password(client):
-    payload = {"username": "neo", "password": "wrongpass"}
+    payload = {"username": "user_170058", "password": "wrongpass"}
+
     response = client.post("/auth/login", json=payload)
+
     assert response.status_code == 400
     assert response.json()["detail"] == "Invalid credentials"
 
-def test_login_inactive_user(client):
-    payload = {"username": "new_user20250507200635", "password": "securepassword"}
+def test_login_inactive_user(client, test_user):
+    payload = {"username": "tester20250508172848", "password": "123456"}
     
     response = client.post("/auth/login", json=payload)
     assert response.status_code == 403
     assert response.json()["detail"] == "User is not active"
+
+def test_login_user_not_found(client, test_user):
+
+    response = client.post("/auth/login", json={"username": "ghost", "password": "123"})
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid credentials"
 
 class FakeResult:
     async def scalar_one_or_none(self):
