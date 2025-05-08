@@ -3,7 +3,11 @@ from sqlalchemy.future import select
 from src.database.models import Permission, Role, role_permissions
 from src.services.utils import logger
 from sqlalchemy.ext.asyncio import AsyncSession
+from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
 from uuid import UUID
+
+import pytest
 
 class RoleRepository:
     def __init__(self, db: AsyncSession):
