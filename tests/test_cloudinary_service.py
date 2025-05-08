@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from main import app
 from src.database.models import User
@@ -47,3 +48,23 @@ async def test_upload_file_success(mock_cloud_image, mock_upload):
     assert result == "https://res.cloudinary.com/fake-url"
     mock_upload.assert_called_once()
     mock_image_instance.build_url.assert_called_once()
+
+@pytest.mark.asyncio
+@patch("src.services.cloudinary.cloudinary.uploader.upload", side_effect=Exception("Upload failed"))
+@patch("src.services.cloudinary.UploadFileService.configure_cloudinary")
+async def test_upload_file_exception(mock_configure, mock_upload):
+    dummy_file = UploadFile(filename="test.jpg", file=BytesIO(b"fake image content"))
+
+    with pytest.raises(HTTPException) as exc_info:
+        await UploadFileService.upload_file(
+            file=dummy_file,
+            width=100,
+            height=100,
+            crop="fill",
+            effect="sepia"
+        )
+
+    assert exc_info.value.status_code == 400
+    assert "Upload with filters failed: Upload failed" in exc_info.value.detail
+    mock_configure.assert_called_once()
+    mock_upload.assert_called_once()
