@@ -5,12 +5,12 @@ from src.database.models import User
 from src.routes import cloudinary
 from unittest.mock import patch
 from uuid import uuid4
-
-import pytest
 from io import BytesIO
 from fastapi import UploadFile
 from unittest.mock import MagicMock
 from src.services.cloudinary import UploadFileService
+
+import pytest
 
 client = TestClient(app)
 def fake_current_user():

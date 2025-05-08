@@ -75,8 +75,6 @@ class RoleRepository:
                 await self.db.flush()
                 permission = new_permission
 
-            logger.info(f"Checking permission link for role.id={role.id} ({type(role.id)}), permission.id={permission.id} ({type(permission.id)})")
-
             # Defensive guard
             if not isinstance(role.id, (int, str, UUID)) or not isinstance(permission.id, (int, str, UUID)):
                 logger.error(f"Invalid types — role: {role} ({type(role)}), permission: {permission} ({type(permission)})")

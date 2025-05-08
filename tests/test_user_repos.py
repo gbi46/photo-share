@@ -12,9 +12,11 @@ import pytest
 @pytest.mark.asyncio
 async def test_get_user_account(db_session, test_user):
     repo = UserRepository(db_session)
+
     result = await repo.get_user_account(test_user.id)
-    assert result.username == f"tester{datetime.now().strftime('%Y%m%d%H%M%S')}"
-    assert result.email == f"tester{datetime.now().strftime('%Y%m%d%H%M%S')}@example.com"
+
+    assert result.username == test_user.username
+    assert result.email == test_user.email
 
 @pytest.mark.asyncio
 async def test_get_user_account_not_found(async_fake_db):
@@ -99,18 +101,21 @@ async def test_get_user_profile_by_username_not_found(async_fake_db):
 @pytest.mark.asyncio
 async def test_update_user(db_session, test_user):
     repo = UserRepository(db_session)
+
+    username = f"updated_user{datetime.now().strftime('%Y%m%d%H%M%S')}"
     update = UserUpdateRequest(
-        username="updated",
+        username=username,
         first_name="First",
         last_name="Last",
-        email="updated@example.com",
+        email=f"{username}@example.com",
         img_link="http://img.com",
         phone="123456"
     )
     updated_user = await repo.update_user(test_user.id, update)
-    assert updated_user.username == "updated"
+    assert updated_user.username == f"{username}"
     assert updated_user.first_name == "First"
-    assert updated_user.email == "updated@example.com"
+    assert updated_user.last_name == "Last"
+    assert updated_user.email == f"{username}@example.com"
 
 @pytest.mark.asyncio
 async def test_update_user_status(db_session, test_user):
