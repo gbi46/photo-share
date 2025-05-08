@@ -57,3 +57,9 @@ Make the first migration to create tables
 ```
 alembic upgrade head
 ```
+
+## Running tests
+
+```
+pytest --cov
+```
