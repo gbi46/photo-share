@@ -4,10 +4,10 @@ from fastapi.testclient import TestClient
 from main import app
 from sqlalchemy import create_engine, select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.orm import sessionmaker
 from src.core.security import security
-from src.database.models import Base, User
+from src.database.models import Base, Comment, User
 from src.database.db import get_db
+from src.repositories.comment import CommentRepository
 from src.services.auth import AuthService
 from src.services.user import UserService
 from unittest.mock import AsyncMock, patch, MagicMock
@@ -16,6 +16,10 @@ from uuid import uuid4
 import asyncio, pytest, time
 
 DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+engine = create_engine(
+    DATABASE_URL, connect_args={"check_same_thread": False}
+)
 
 @pytest.fixture
 def auth_repo(mock_db):
@@ -48,10 +52,21 @@ async def db_session(db_engine):
     async with async_session() as session:
         yield session
 
-engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+@pytest.fixture
+def fake_comment():
+    return Comment(
+        id=uuid4(),
+        post_id=uuid4(),
+        user_id=uuid4(),
+        message="Test comment",
+        created_at=datetime.now(),
+        updated_at=datetime.now(),
+        user=User(id=uuid4(), username="testuser")
+    )
+
+@pytest.fixture
+def fake_comment_repo(async_fake_db):
+    return CommentRepository(async_fake_db)
 
 @pytest.fixture(scope="session")
 def event_loop():
