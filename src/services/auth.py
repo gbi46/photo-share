@@ -39,7 +39,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         
         stmt = select(User).options(selectinload(User.roles)).where(User.id == user_id)
         result = await db.execute(stmt)
-        user = result.scalar_one_or_none()
+        user = await result.scalar_one_or_none()
 
         if user is None:
             raise HTTPException(
@@ -61,4 +61,4 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Unexpected error: {str(e)}",
-            )
+        )
