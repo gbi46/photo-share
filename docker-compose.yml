@@ -1,0 +1,30 @@
+services:
+  web:
+    container_name: fastapi-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["bash", "./start.sh"]
+    volumes:
+      - .:/app
+    environment:
+      ENV_APP: docker
+    ports:
+      - "8002:8002"
+    depends_on:
+      - db
+  db:
+    container_name: fastapi-db
+    image: postgres:15
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
