@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from src.core.security import security
 from src.database.models import Base, User
 from src.database.db import get_db
+from src.services.auth import AuthService
 from src.services.user import UserService
 from unittest.mock import AsyncMock, patch, MagicMock
 from uuid import uuid4
@@ -15,6 +16,23 @@ from uuid import uuid4
 import asyncio, pytest, time
 
 DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+@pytest.fixture
+def auth_repo(mock_db):
+    repo = MagicMock()
+    repo.db = mock_db
+    repo.create_user = AsyncMock(return_value={"id": 1, "email": "test@example.com"})
+    return repo
+
+@pytest.fixture
+def auth_service(auth_repo):
+    return AuthService(auth_repo)
+
+@pytest.mark.asyncio
+async def test_create_user(auth_service, user_payload):
+    result = await auth_service.create(user_payload, "user")
+    assert result["email"] == "test@example.com"
+    auth_service.auth_repo.create_user.assert_awaited_once_with(user_payload, "user")
 
 @pytest.fixture(scope="module")
 async def db_engine():
@@ -58,8 +76,23 @@ def fake_db():
     return MagicMock()
 
 @pytest.fixture
+def async_fake_db():
+    return AsyncMock()
+
+@pytest.fixture
 def fake_current_user():
     return User(id=uuid4(), username="username", status="active")
+
+@pytest.fixture
+def get_token(session):
+    result = session.execute(select(User).limit(1))
+    user = result.scalar_one_or_none()
+
+    token = security.create_token('access', user.id)
+
+    print(f"token from get token: {token}")
+
+    return token
 
 @pytest.fixture
 async def test_user(db_session):
@@ -79,17 +112,6 @@ async def test_user(db_session):
     return user
 
 @pytest.fixture
-def get_token(session):
-    result = session.execute(select(User).limit(1))
-    user = result.scalar_one_or_none()
-
-    token = security.create_token('access', user.id)
-
-    print(f"token from get token: {token}")
-
-    return token
-
-@pytest.fixture
 def mock_upload():
     with patch("src.services.cloudinary.UploadFileService.upload_file", new_callable=AsyncMock) as mock:
         yield mock
@@ -97,6 +119,13 @@ def mock_upload():
 @pytest.fixture
 def mock_user_repo():
     return AsyncMock()
+
+@pytest.fixture
+def user_payload():
+    return {
+        "email": "test@example.com",
+        "password": "securepassword"
+    }
 
 @pytest.fixture
 def user_service(mock_user_repo):
