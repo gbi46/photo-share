@@ -1,13 +1,14 @@
 from datetime import datetime
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from uuid import uuid4
 from datetime import datetime
 from src.database.models import Base, User
 from src.repositories.post import PostRepository
 from src.schemas.post import PostCreateModel
 from src.schemas.tag import TagsShortResponse
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest, time
 
@@ -75,6 +76,23 @@ async def test_get_post(db_session: AsyncSession, test_user: User):
 
     assert result.title == "Another Post"
     assert result.tags[0].name == "view"
+
+@pytest.mark.asyncio
+async def test_get_post_not_found(async_fake_db):
+    post_id = uuid4()
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = None
+    async_fake_db.execute = AsyncMock(return_value=result_mock)
+
+    repo = PostRepository(async_fake_db)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await repo.get_post(post_id)
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Post not found"
+    async_fake_db.execute.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_get_all_posts(db_session: AsyncSession, test_user: User):
