@@ -55,8 +55,6 @@ def test_get_comment_success():
     result = service.get_comment(uuid4())
     assert result == "comment1"
 
-
-
 @pytest.mark.asyncio
 async def test_update_comment(comment_service, mock_repo):
     comment_id = uuid4()
@@ -67,7 +65,6 @@ async def test_update_comment(comment_service, mock_repo):
 
     assert result == "updated_comment"
     mock_repo.update.assert_awaited_once_with(comment_id, "Updated message")
-
 
 @pytest.mark.asyncio
 async def test_delete_comment_success(comment_service, mock_repo):
@@ -82,7 +79,6 @@ async def test_delete_comment_success(comment_service, mock_repo):
     assert result is True
     mock_repo.get_comment.assert_awaited_once_with(comment_id)
     mock_repo.delete.assert_awaited_once_with(comment_id)
-
 
 @pytest.mark.asyncio
 async def test_delete_comment_not_found(comment_service, mock_repo):

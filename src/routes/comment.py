@@ -38,9 +38,11 @@ async def get_comment(
     service = CommentService(CommentRepository(db))
     return await service.get_comment(comment_id)
 
+update_access_dep = user_has_access_to_comment("update")
+
 @router.put("/comments/{comment_id}", response_model=CommentUpdateResponse)
 async def update_comment(
-    comment: Comment = user_has_access_to_comment('update'),
+    comment: Comment = update_access_dep,
     update_data: CommentUpdateRequest = Body(...),
     user: User = require_role("user"),
     db: AsyncSession = Depends(get_db),
