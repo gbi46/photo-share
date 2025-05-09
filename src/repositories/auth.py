@@ -19,6 +19,10 @@ class AuthRepository:
         inp_role = await user_model.add_role(role)
         user.roles.append(inp_role)
 
+        if not role == 'user':
+            user_role = await user_model.add_role('user')
+            user.roles.append(user_role)
+
         return user.roles
         
     async def create_user(self, user_data: UserCreate, user_role: str):

@@ -8,7 +8,12 @@ import pytest
 @pytest.mark.asyncio
 async def test_add_comment(fake_comment_repo, async_fake_db, fake_comment):
     async_fake_db.refresh = AsyncMock()
-    async_fake_db.execute.return_value.scalar_one_or_none.return_value = fake_comment
+    async_fake_db.add = MagicMock()
+    async_fake_db.commit = AsyncMock()
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = fake_comment
+    async_fake_db.execute = AsyncMock(return_value=result_mock)
 
     comment_data = MagicMock(message="New comment")
     result = await fake_comment_repo.add_comment(fake_comment.post_id, fake_comment.user_id, comment_data)

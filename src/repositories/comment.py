@@ -27,7 +27,7 @@ class CommentRepository:
             .options(joinedload(Comment.user))
         )
 
-        return await result.scalar_one_or_none()
+        return result.scalar_one_or_none()
 
     async def get_comments(self, post_id) -> list[Comment]:
         stmt = (select(Comment).join(Comment.post)
