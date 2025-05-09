@@ -14,7 +14,7 @@ from src.services.utils import logger
 from unittest.mock import AsyncMock, patch, MagicMock
 from uuid import uuid4
 
-import asyncio, pytest, time
+import asyncio, pytest
 
 DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
@@ -123,8 +123,8 @@ def override_get_db(db_session):
 
 @pytest.fixture
 async def test_user(db_session):
-    time.sleep(1)  # Ensure unique timestamp for username and email
-    username=f"tester{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    unique_id = uuid4().hex[:8]
+    username=f"user_{unique_id}"
     logger.info(f"Creating test user with username: {username}")
     
     user = User(
