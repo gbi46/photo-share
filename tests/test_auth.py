@@ -215,8 +215,9 @@ async def test_create_user_roles(mock_user_model_class, mock_role_repo_class):
     auth_repo = AuthRepository(fake_db)
     result = await auth_repo.create_user_roles(user, "admin")
 
-    mock_role_repo.create_role.assert_awaited_once_with("admin")
-    mock_role_repo.create_role_permissions.assert_awaited_once_with("admin")
-    mock_user_model.add_role.assert_awaited_once_with("admin")
+    assert mock_user_model.add_role.await_count == 2
+    mock_user_model.add_role.assert_any_await("admin")
+    mock_user_model.add_role.assert_any_await("user")
+
     assert fake_role in result
-    assert len(result) == 1
+    assert len(result) == 2

@@ -20,6 +20,7 @@ class UserCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class UserAccountResponse(BaseModel):
+    id: UUID
     username: Optional[str]
     first_name: Optional[str]
     last_name: Optional[str]
