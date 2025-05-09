@@ -14,7 +14,7 @@ env_file = str(env_file_path) if env_file_path.exists() else None
 
 class Settings(BaseSettings):
     ENV_APP: str = env_name
-    DB_URL: str = Field(..., env="DATABASE_URL")
+    DB_URL: str = Field(..., alias="DATABASE_URL")
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
     ALGORITHM: str
@@ -34,3 +34,4 @@ class Settings(BaseSettings):
     )
 
 settings = Settings()
+
