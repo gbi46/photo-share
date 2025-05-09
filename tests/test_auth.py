@@ -171,7 +171,7 @@ async def test_get_current_user_success():
     fake_db = FakeDB()
     token = security.create_token('access', user.id)
 
-    result = await get_current_user(token, fake_db)
+    result = get_current_user(token, fake_db)
 
     print("Result type:", type(result))
     print("Is coroutine?", callable(result))

@@ -5,7 +5,6 @@ echo "Waiting for Postgres..."
 ./wait-for-it.sh db:5432 --timeout=30 --strict
 
 echo "Running Alembic migrations..."
-alembic revision --autogenerate -m "Init" || echo "Revision already exists"
 alembic upgrade head
 
 echo "Starting FastAPI..."
