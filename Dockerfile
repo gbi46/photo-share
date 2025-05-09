@@ -26,4 +26,4 @@ RUN poetry config virtualenvs.create false \
 COPY . /app
 
 # Expose the port (FastAPI default is 8000)
-EXPOSE 8002
+EXPOSE 8080
