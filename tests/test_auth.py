@@ -167,11 +167,20 @@ class FakeDB:
 
 @pytest.mark.asyncio
 async def test_get_current_user_success():
-    user = User(id=UUID, email="test@example.com")
-    fake_db = FakeDB()
+    user = User(id=uuid4(), email="test@example.com")
+    
+    # Mock the result of db.execute().scalar_one_or_none() chain
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = user
+
+    # Mock the db session
+    fake_db = AsyncMock()
+    fake_db.execute.return_value = result_mock
+
+    # Create token with user.id
     token = security.create_token('access', user.id)
 
-    result = get_current_user(token, fake_db)
+    result = await get_current_user(token, fake_db)
 
     print("Result type:", type(result))
     print("Is coroutine?", callable(result))
