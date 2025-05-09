@@ -1,9 +1,11 @@
 from pathlib import Path
 from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
-import os
+from src.conf.config_init import InitialSettings
 
-env_name = os.getenv("ENV_APP", "development")
+init_settings = InitialSettings()
+env_name = init_settings.ENV_APP
+
 base_dir = Path(__file__).resolve().parent
 env_file_path = base_dir / f".env.{env_name}"
 
