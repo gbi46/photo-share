@@ -28,23 +28,6 @@ async def db_session(db_engine):
     async with async_session() as session:
         yield session
 
-@pytest.fixture
-async def test_user(db_session):
-    time.sleep(1)  # Ensure unique timestamp for username and email
-    user = User(
-        id=uuid4(),
-        username=f"tester{datetime.now().strftime('%Y%m%d%H%M%S')}",
-        email=f"tester{datetime.now().strftime('%Y%m%d%H%M%S')}@example.com",
-        password="hashedpw",
-        status="active",
-        created_at=datetime.now(),
-        updated_at=datetime.now()
-    )
-    db_session.add(user)
-    await db_session.commit()
-    await db_session.refresh(user)
-    return user
-
 @pytest.mark.asyncio
 async def test_create_post(db_session: AsyncSession, test_user: User):
     repo = PostRepository(db_session)

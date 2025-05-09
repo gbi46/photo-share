@@ -63,3 +63,9 @@ alembic upgrade head
 ```
 pytest --cov
 ```
+
+or for report with precision
+
+```
+coverage report --precision=2
+```
